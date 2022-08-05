@@ -25,10 +25,12 @@ parser.add_argument('--fold', type=int ,help="pass the fold number in range [1,1
 
 args = parser.parse_args()
 
+data_dir="kfold_500"
+test_dir="kfold_real"
 # In[]
 if args.gen_plot:
     fold=args.fold
-    with open("kfold_500/all_losses.json","r") as f:
+    with open(f"{data_dir}/all_losses.json","r") as f:
         all_losses=json.load(f)
     
     loss=all_losses[fold-1]
@@ -36,7 +38,7 @@ if args.gen_plot:
     plt.title(f"Loss Plot for fold {fold}")
     plt.xlabel("epochs")
     plt.ylabel("loss")
-    plt.savefig(f"kfold/fold_{fold}_plot.png")
+    plt.savefig(f"{data_dir}/fold_{fold}_plot.png")
     plt.show()
 
 # In[]
@@ -78,24 +80,22 @@ class Model(nn.Module):
         return c2
 
 if args.train_model:
-    data_dir="kfold_real"
-    test_dir="kfold_real"
-    g= bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data.pbz2", 'rb')
-    dataset=cPickle.load(g)
+    # g= bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data.pbz2", 'rb')
+    # dataset=cPickle.load(g)
 
-    # g1 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_1000.pbz2", "rb")
-    # g2 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_2000.pbz2", "rb")
-    # g4 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_4000.pbz2", "rb")
-    # g5 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_5000.pbz2", "rb")
-    # g3 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_3000.pbz2", "rb")
-    # g6 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_6000.pbz2", "rb")
-    # dataset1 = cPickle.load(g1)
-    # dataset2 = cPickle.load(g2)
-    # dataset3 = cPickle.load(g3)
-    # dataset4 = cPickle.load(g4)
-    # dataset5 = cPickle.load(g5)
-    # dataset6 = cPickle.load(g6)
-    # dataset = dataset1 + dataset2 + dataset3 + dataset4 + dataset5 + dataset6
+    g1 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_1000.pbz2", "rb")
+    g2 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_2000.pbz2", "rb")
+    g4 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_4000.pbz2", "rb")
+    g5 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_5000.pbz2", "rb")
+    g3 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_3000.pbz2", "rb")
+    g6 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_6000.pbz2", "rb")
+    dataset1 = cPickle.load(g1)
+    dataset2 = cPickle.load(g2)
+    dataset3 = cPickle.load(g3)
+    dataset4 = cPickle.load(g4)
+    dataset5 = cPickle.load(g5)
+    dataset6 = cPickle.load(g6)
+    dataset = dataset1 + dataset2 + dataset3 + dataset4 + dataset5 + dataset6
     random.shuffle(dataset)
 
     g_test = bz2.BZ2File(f"{test_dir}/graph_dataset/graphs_data.pbz2", "rb")
@@ -118,7 +118,7 @@ if args.train_model:
 
     all_losses=[]
 
-    folds = 10
+    folds = 1
     num_examples = len(dataset)
     fsize = num_examples // 10
     val_reports = []
@@ -157,7 +157,7 @@ if args.train_model:
                 loss.backward()
                 optimizer.step()
                 cnt += 1
-            loss_fold.append(loss)
+            loss_fold.append(float(loss))
             if epoch % 10 == 0:
                 print(f"epoch : {epoch+1} loss : {l/cnt}")
         all_losses.append(loss_fold)
