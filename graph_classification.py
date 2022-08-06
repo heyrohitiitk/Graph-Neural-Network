@@ -1,6 +1,4 @@
 # In[38]:
-
-
 import dgl
 import torch
 import torch.nn as nn
@@ -16,6 +14,8 @@ import random
 import os
 import matplotlib.pyplot as plt
 import argparse
+
+# In[]
 
 parser = argparse.ArgumentParser(description='Main Code for Graph Classification')
 parser.add_argument('--train_model', help="To train the model", action='store_true')
@@ -118,7 +118,7 @@ if args.train_model:
 
     all_losses=[]
 
-    folds = 1
+    folds = 10
     num_examples = len(dataset)
     fsize = num_examples // 10
     val_reports = []
