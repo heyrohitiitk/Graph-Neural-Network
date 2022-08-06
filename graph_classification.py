@@ -118,7 +118,7 @@ if args.train_model:
 
     all_losses=[]
 
-    folds = 1
+    folds = 10
     num_examples = len(dataset)
     fsize = num_examples // 10
     val_reports = []
