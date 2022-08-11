@@ -14,7 +14,9 @@ import random
 import os
 import matplotlib.pyplot as plt
 import argparse
-
+import gc
+from sklearn.model_selection import StratifiedKFold
+import numpy as np
 # In[]
 
 parser = argparse.ArgumentParser(description='Main Code for Graph Classification')
@@ -82,21 +84,57 @@ class Model(nn.Module):
 if args.train_model:
     # g= bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data.pbz2", 'rb')
     # dataset=cPickle.load(g)
+    dataset=[]
 
     g1 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_1000.pbz2", "rb")
+    
+    temp = cPickle.load(g1)
+    dataset+=temp
+    del temp
+    gc.collect()
+
     g2 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_2000.pbz2", "rb")
-    g4 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_4000.pbz2", "rb")
-    g5 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_5000.pbz2", "rb")
+
+    temp = cPickle.load(g2)
+    dataset+=temp
+    del temp
+    gc.collect()
+
     g3 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_3000.pbz2", "rb")
+    
+    temp = cPickle.load(g3)
+    dataset+=temp
+    del temp
+    gc.collect()
+
+    g4 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_4000.pbz2", "rb")
+
+    temp = cPickle.load(g4)
+    dataset+=temp
+    del temp
+    gc.collect()
+
+    g5 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_5000.pbz2", "rb")
+    
+    temp = cPickle.load(g5)
+    dataset+=temp
+    del temp
+    gc.collect()
+
     g6 = bz2.BZ2File(f"{data_dir}/graph_dataset/graphs_data_6000.pbz2", "rb")
-    dataset1 = cPickle.load(g1)
-    dataset2 = cPickle.load(g2)
-    dataset3 = cPickle.load(g3)
-    dataset4 = cPickle.load(g4)
-    dataset5 = cPickle.load(g5)
-    dataset6 = cPickle.load(g6)
-    dataset = dataset1 + dataset2 + dataset3 + dataset4 + dataset5 + dataset6
-    random.shuffle(dataset)
+
+    temp = cPickle.load(g6)
+    dataset+=temp
+    del temp
+    gc.collect()
+    
+    # dataset2 = cPickle.load(g2)
+    # dataset3 = cPickle.load(g3)
+    # dataset4 = cPickle.load(g4)
+    # dataset5 = cPickle.load(g5)
+    # dataset6 = cPickle.load(g6)
+    # dataset = dataset1 + dataset2 + dataset3 + dataset4 + dataset5 + dataset6
+    # random.shuffle(dataset)
 
     g_test = bz2.BZ2File(f"{test_dir}/graph_dataset/graphs_data.pbz2", "rb")
     dataset_test = cPickle.load(g_test)
@@ -106,7 +144,7 @@ if args.train_model:
 
     test_sampler = SubsetRandomSampler(torch.arange(num_test))
     test_dataloader = GraphDataLoader(
-        dataset_test, sampler=test_sampler, batch_size=5, drop_last=False
+        dataset_test, sampler=test_sampler, batch_size=30, drop_last=False
     )
 
     # Create the model with given dimensions
@@ -122,34 +160,65 @@ if args.train_model:
     num_examples = len(dataset)
     fsize = num_examples // 10
     val_reports = []
+
+    graphs=np.array([i for i in range(6000)])
+    labels=np.array([dataset[i][1] for i in range(6000)])
+
+    skf=StratifiedKFold(n_splits=10)
+
+    train_fold=[]
+    test_fold=[]
+
+    for train_index, test_index in skf.split(graphs, labels):
+        X_train, X_test = graphs[train_index], graphs[test_index]
+        y_train, y_test = labels[train_index], labels[test_index]
+        train_fold.append([(x,dataset[x][1]) for x in X_train])
+        test_fold.append([dataset[x] for x in X_test])
+
     for i in range(folds):
-        trll = 0
-        trlr = i * fsize
-        vall = trlr
-        valr = i * fsize + fsize
-        trrl = valr
-        trrr = num_examples
+        train_data=train_fold[i]
+        val_data=test_fold[i]
 
-        train_left_indices = torch.arange(trll, trlr)
-        train_right_indices = torch.arange(trrl, trrr)
+        train_indices1 = torch.arange(0, 1800)
+        train_indices2 = torch.arange(1800, 3600)
+        train_indices3 = torch.arange(3600, 5400)
 
-        train_indices = torch.cat([train_left_indices, train_right_indices])
-        val_indices = torch.arange(vall, valr)
+        val_indices = torch.arange(0, len(val_data))
 
-        train_sampler = SubsetRandomSampler(train_indices)
+        train_sampler1 = SubsetRandomSampler(train_indices1)
+        train_sampler2 = SubsetRandomSampler(train_indices2)
+        train_sampler3 = SubsetRandomSampler(train_indices3)
+
         val_sampler = SubsetRandomSampler(val_indices)
 
-        train_dataloader = GraphDataLoader(
-            dataset, sampler=train_sampler, batch_size=5, drop_last=False
+        train_dataloader1 = torch.utils.data.DataLoader(
+            train_data, sampler=train_sampler1, batch_size=10, drop_last=False
         )
+        train_dataloader2 = torch.utils.data.DataLoader(
+            train_data, sampler=train_sampler2, batch_size=10, drop_last=False
+        )
+        train_dataloader3 = torch.utils.data.DataLoader(
+            train_data, sampler=train_sampler3, batch_size=10, drop_last=False
+        )
+
         val_dataloader = GraphDataLoader(
-            dataset, sampler=val_sampler, batch_size=5, drop_last=False
+            val_data, sampler=val_sampler, batch_size=30, drop_last=False
         )
+
         loss_fold=[]
         for epoch in range(100):
             l = 0.0
             cnt = 0
-            for batched_graph, labels in train_dataloader:
+            for l1,l2,l3 in zip(train_dataloader1,train_dataloader2,train_dataloader3):
+                graph_index=torch.cat([l1[0],l2[0],l3[0]])
+                labels=torch.cat([l1[1],l2[1],l3[1]])
+                
+                temp=list(zip(graph_index,labels))
+                random.shuffle(temp)
+                graph_index,labels=zip(*temp)
+
+                batched_graph=dgl.batch([dataset[x][0] for x in graph_index])
+
                 pred = model(batched_graph, batched_graph.ndata["h"].float())
                 loss = F.cross_entropy(pred, labels)
                 l += loss
