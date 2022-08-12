@@ -206,7 +206,7 @@ if args.train_model:
         )
 
         loss_fold=[]
-        for epoch in range(100):
+        for epoch in range(500):
             l = 0.0
             cnt = 0
             for l1,l2,l3 in zip(train_dataloader1,train_dataloader2,train_dataloader3):
@@ -216,7 +216,7 @@ if args.train_model:
                 temp=list(zip(graph_index,labels))
                 random.shuffle(temp)
                 graph_index,labels=zip(*temp)
-
+                labels=torch.LongTensor(labels)
                 batched_graph=dgl.batch([dataset[x][0] for x in graph_index])
 
                 pred = model(batched_graph, batched_graph.ndata["h"].float())
@@ -226,7 +226,7 @@ if args.train_model:
                 loss.backward()
                 optimizer.step()
                 cnt += 1
-            loss_fold.append(float(loss))
+            loss_fold.append(float(l/cnt))
             if epoch % 10 == 0:
                 print(f"epoch : {epoch+1} loss : {l/cnt}")
         all_losses.append(loss_fold)
